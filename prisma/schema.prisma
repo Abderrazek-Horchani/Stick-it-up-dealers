@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum RequestStatus {
+  PENDING
+  PRINTING
+  PRINTED
+  DELIVERED
+}
+
+model RestockRequest {
+  id          Int           @id @default(autoincrement())
+  dealerName  String
+  timestamp   DateTime      @default(now())
+  status      RequestStatus @default(PENDING)
+  stickers    StickerRequest[]
+
+  @@map("restock_requests")
+}
+
+model StickerRequest {
+  id              Int      @id @default(autoincrement())
+  name            String
+  category        String
+  quantity        Int
+  restockRequest  RestockRequest  @relation(fields: [requestId], references: [id])
+  requestId       Int
+
+  @@map("sticker_requests")
+}
+
+model Dealer {
+  id            String          @id // Clerk user ID
+  name          String
+  commission    Float           @default(0.20) // Default 20% commission
+  createdAt     DateTime        @default(now())
+  sales         SalesRecord[]
+  updatedAt     DateTime        @updatedAt
+  weeklyStats   WeeklyPerformance[]
+
+  @@map("dealers")
+}
+
+model SalesRecord {
+  id            Int             @id @default(autoincrement())
+  dealer        Dealer          @relation(fields: [dealerId], references: [id])
+  dealerId      String
+  amount        Float
+  commission    Float           // Store the commission rate at the time of sale
+  earnings      Float           // Pre-calculated earnings (amount * commission)
+  timestamp     DateTime        @default(now())
+  week          Int            // Store the week number for easy weekly rankings
+  year          Int            // Store the year for proper week calculations
+  notes         String?        // Optional notes about the sale
+
+  @@map("sales_records")
+  @@index([dealerId])
+  @@index([week, year])
+}
+
+// View for weekly leaderboard (will be calculated in the application)
+model WeeklyPerformance {
+  id            String          @id // Composite of dealerId + week + year
+  dealer        Dealer          @relation(fields: [dealerId], references: [id])
+  dealerId      String
+  week          Int
+  year          Int
+  totalSales    Float
+  totalEarnings Float
+  rank          Int
+  updatedAt     DateTime        @updatedAt
+
+  @@map("weekly_performance")
+  @@unique([dealerId, week, year])
+  @@index([week, year])
+}
