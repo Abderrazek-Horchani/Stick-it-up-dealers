@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { clerkClient } from '@clerk/nextjs/server';
 import { getAuth } from '@clerk/nextjs/server';
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
