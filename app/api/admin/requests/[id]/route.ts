@@ -1,136 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RequestStatus } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const dynamic = "force-dynamic";
 
-// ✅ PATCH: Update request status
-export async function PATCH(
-  request: NextRequest,
+// ✅ GET one restock request by ID (with stickers)
+export async function GET(
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
-    }
-
-    const body = await request.json();
-
-    if (!body.status) {
-      return NextResponse.json(
-        { error: "Status is required" },
-        { status: 400 }
-      );
-    }
-
-    // Validate status
-    const validStatus = Object.values(RequestStatus).includes(body.status);
-    if (!validStatus) {
-      return NextResponse.json(
-        {
-          error: `Invalid status value. Must be one of: ${Object.values(
-            RequestStatus
-          ).join(", ")}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if request exists
-    const existingRequest = await prisma.restockRequest.findUnique({
-      where: { id },
+    const request = await prisma.restockRequest.findUnique({
+      where: { id: Number(params.id) },
+      include: { stickers: true }, // load StickerRequest[]
     });
 
-    if (!existingRequest) {
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
-    }
-
-    const updatedRequest = await prisma.restockRequest.update({
-      where: { id },
-      data: { status: body.status },
-      include: { stickers: true },
-    });
-
-    return NextResponse.json(updatedRequest);
-  } catch (err: unknown) {
-    if (err instanceof PrismaClientKnownRequestError) {
-      switch (err.code) {
-        case "P2002":
-          return NextResponse.json(
-            { error: "Unique constraint violation" },
-            { status: 409 }
-          );
-        case "P2025":
-          return NextResponse.json(
-            { error: "Record not found" },
-            { status: 404 }
-          );
-        default:
-          return NextResponse.json(
-            { error: `Database error: ${err.code}` },
-            { status: 500 }
-          );
-      }
-    }
-
-    if (err instanceof Error) {
+    if (!request) {
       return NextResponse.json(
-        { error: "Internal server error", message: err.message },
-        { status: 500 }
+        { error: "Restock request not found" },
+        { status: 404 }
       );
     }
 
+    return NextResponse.json(request);
+  } catch (err) {
+    console.error("GET error:", err);
     return NextResponse.json(
-      { error: "Internal server error", message: "Unknown error" },
+      { error: "Failed to fetch restock request" },
       { status: 500 }
     );
   }
 }
 
-// ✅ DELETE: Remove request and associated stickers
-export async function DELETE(
-  request: NextRequest,
+// ✅ UPDATE status of a restock request
+export async function PATCH(
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { status } = await req.json();
 
-    if (isNaN(id)) {
-      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
-    }
-
-    // Delete associated sticker requests first
-    await prisma.stickerRequest.deleteMany({
-      where: { requestId: id },
+    const updated = await prisma.restockRequest.update({
+      where: { id: Number(params.id) },
+      data: { status }, // must be one of: PENDING | PRINTING | PRINTED | DELIVERED
     });
 
-    // Then delete the restock request
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("PATCH error:", err);
+    return NextResponse.json(
+      { error: "Failed to update restock request" },
+      { status: 500 }
+    );
+  }
+}
+
+// ✅ DELETE a restock request
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
     await prisma.restockRequest.delete({
-      where: { id },
+      where: { id: Number(params.id) },
     });
 
     return NextResponse.json({ success: true });
-  } catch (err: unknown) {
-    if (err instanceof PrismaClientKnownRequestError) {
-      if (err.code === "P2025") {
-        return NextResponse.json(
-          { error: "Request not found" },
-          { status: 404 }
-        );
-      }
-    }
-
-    if (err instanceof Error) {
-      return NextResponse.json(
-        { error: "Internal server error", message: err.message },
-        { status: 500 }
-      );
-    }
-
+  } catch (err) {
+    console.error("DELETE error:", err);
     return NextResponse.json(
-      { error: "Error deleting restock request" },
+      { error: "Failed to delete restock request" },
       { status: 500 }
     );
   }
