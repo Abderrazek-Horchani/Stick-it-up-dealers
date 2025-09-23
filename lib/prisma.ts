@@ -1,18 +1,13 @@
+import { PrismaClient } from '@prisma/client';
+
 declare global {
-  var prisma: undefined | ReturnType<typeof getPrismaClient>;
+  // allow global `prisma` across hot reloads in development
+  var prisma: PrismaClient | undefined;
 }
 
-import { PrismaClient as ImportedPrismaClient } from '.prisma/client';
+export const prisma =
+  globalThis.prisma ??
+  new PrismaClient({
+  });
 
-export type PrismaClient = ImportedPrismaClient;
-
-function getPrismaClient() {
-  const client = new ImportedPrismaClient();
-  return client;
-}
-
-export const prisma = globalThis.prisma ?? getPrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prisma = prisma;
-}
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma;
