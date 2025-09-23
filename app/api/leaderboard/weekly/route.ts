@@ -1,13 +1,15 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+
 import type { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+
 
 export const dynamic = 'force-dynamic';
 
 
-const prisma = new PrismaClient();
+
 
 function getWeekNumber(date: Date): { week: number; year: number } {
   const target = new Date(date.valueOf());

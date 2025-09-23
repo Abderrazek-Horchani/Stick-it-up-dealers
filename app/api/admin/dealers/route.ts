@@ -1,14 +1,16 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+
 import type { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+
 
 export const dynamic = 'force-dynamic';
 
 // import type { Dealer } from "@prisma/client";
 
-const prisma = new PrismaClient();
+
 
 export async function GET(request: NextRequest) {
   try {

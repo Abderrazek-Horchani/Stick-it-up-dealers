@@ -1,13 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+
 import type { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+
 
 export const dynamic = 'force-dynamic';
 
 
-const prisma = new PrismaClient();
+
 
 export async function GET(request: NextRequest) {
   return NextResponse.json({ error: "Method not allowed" }, { status: 405 });

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+
 import { clerkClient } from '@clerk/nextjs/server';
 import { getAuth } from '@clerk/nextjs/server';
+import { prisma } from "@/lib/prisma";
+
 
 export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,11 +33,11 @@ export async function GET(request: NextRequest) {
     });
 
     // Get all unique dealer IDs
-    const dealerIds = [...new Set(requests.map(req => req.dealerName))];
+    const dealerIds = [...new Set(requests.map((req: { dealerName: string }) => req.dealerName))];
 
     // Fetch all dealers' information in one batch
     const usersData = await clerkClient.users.getUserList({
-      userId: dealerIds
+      userId: dealerIds as string[]
     });
 
     // Create a map of dealer IDs to names
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Add display names to requests
-    const requestsWithNames = requests.map(request => ({
+    const requestsWithNames = requests.map((request: typeof requests[number]) => ({
       ...request,
       displayName: dealerNames.get(request.dealerName) || request.dealerName
     }));
