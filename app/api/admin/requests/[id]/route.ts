@@ -97,8 +97,10 @@ export async function DELETE(
     const id = parseInt(params.id);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
 
-    // Delete all associated sticker requests first (cascade should handle, but explicit delete is safe)
+    // Delete all associated sticker requests first (safe even if cascade is enabled)
     await prisma.stickerRequest.deleteMany({ where: { requestId: id } });
+
+    // Delete the restock request
     await prisma.restockRequest.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
