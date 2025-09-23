@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
+
 interface PrismaError extends Error {
   code: string;
   meta?: Record<string, any>;

@@ -5,6 +5,9 @@ import { PrismaClient } from "@prisma/client";
 import type { NextRequest } from "next/server";
 import type { RestockRequestBody, StickerRequest } from "@/app/types/restock";
 
+export const dynamic = 'force-dynamic';
+
+
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {

@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import type { NextRequest } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
+
 const prisma = new PrismaClient();
 
 function getWeekNumber(date: Date): { week: number; year: number } {

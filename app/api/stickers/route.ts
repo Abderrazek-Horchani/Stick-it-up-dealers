@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readdirSync, statSync } from 'fs';
 import { join, sep } from 'path';
 
+export const dynamic = 'force-dynamic';
+
+
 interface Category {
   name: string;
   path: string;
