@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // ✅ use the singleton
 
 export const dynamic = 'force-dynamic';
 
@@ -24,16 +24,11 @@ export async function PATCH(
 ) {
   try {
     const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
-    }
+    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
 
     const body = await request.json();
-    if (!body.status) {
-      return NextResponse.json({ error: 'Status is required' }, { status: 400 });
-    }
+    if (!body.status) return NextResponse.json({ error: 'Status is required' }, { status: 400 });
 
-    // Validate status
     if (!Object.values(RequestStatus).includes(body.status)) {
       return NextResponse.json(
         { error: `Invalid status value. Must be one of: ${Object.values(RequestStatus).join(', ')}` },
@@ -41,16 +36,9 @@ export async function PATCH(
       );
     }
 
-    // Check if request exists
-    const existingRequest = await prisma.restockRequest.findUnique({
-      where: { id },
-    });
+    const existingRequest = await prisma.restockRequest.findUnique({ where: { id } });
+    if (!existingRequest) return NextResponse.json({ error: 'Request not found' }, { status: 404 });
 
-    if (!existingRequest) {
-      return NextResponse.json({ error: 'Request not found' }, { status: 404 });
-    }
-
-    // Update status
     const updatedRequest = await prisma.restockRequest.update({
       where: { id },
       data: { status: body.status },
@@ -60,20 +48,7 @@ export async function PATCH(
     return NextResponse.json(updatedRequest);
   } catch (err) {
     console.error('Error updating request:', err);
-
-    if (err instanceof Error && (err as PrismaError).code) {
-      const prismaError = err as PrismaError;
-      switch (prismaError.code) {
-        case 'P2002':
-          return NextResponse.json({ error: 'Unique constraint violation' }, { status: 409 });
-        case 'P2025':
-          return NextResponse.json({ error: 'Record not found' }, { status: 404 });
-        default:
-          return NextResponse.json({ error: `Database error: ${prismaError.code}` }, { status: 500 });
-      }
-    }
-
-    return NextResponse.json({ error: 'Internal server error', message: (err as Error).message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -84,19 +59,10 @@ export async function DELETE(
 ) {
   try {
     const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
-    }
+    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
 
-    // Delete all associated sticker requests first (cascade should handle, but just in case)
-    await prisma.stickerRequest.deleteMany({
-      where: { requestId: id },
-    });
-
-    // Delete the restock request
-    await prisma.restockRequest.delete({
-      where: { id },
-    });
+    await prisma.stickerRequest.deleteMany({ where: { requestId: id } });
+    await prisma.restockRequest.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (err) {
