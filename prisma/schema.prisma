@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum RequestStatus {
@@ -25,6 +25,9 @@ model RestockRequest {
   stickers    StickerRequest[]
 
   @@map("restock_requests")
+  @@index([dealerName])
+  @@index([status])
+  @@index([timestamp])
 }
 
 model StickerRequest {
@@ -32,10 +35,12 @@ model StickerRequest {
   name            String
   category        String
   quantity        Int
-  restockRequest  RestockRequest  @relation(fields: [requestId], references: [id])
+  restockRequest  RestockRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
   requestId       Int
 
   @@map("sticker_requests")
+  @@index([category])
+  @@index([requestId])
 }
 
 model Dealer {
@@ -48,11 +53,12 @@ model Dealer {
   weeklyStats   WeeklyPerformance[]
 
   @@map("dealers")
+  @@index([name])
 }
 
 model SalesRecord {
   id            Int             @id @default(autoincrement())
-  dealer        Dealer          @relation(fields: [dealerId], references: [id])
+  dealer        Dealer          @relation(fields: [dealerId], references: [id], onDelete: Cascade)
   dealerId      String
   amount        Float
   commission    Float           // Store the commission rate at the time of sale
@@ -65,12 +71,13 @@ model SalesRecord {
   @@map("sales_records")
   @@index([dealerId])
   @@index([week, year])
+  @@index([timestamp])
 }
 
 // View for weekly leaderboard (will be calculated in the application)
 model WeeklyPerformance {
   id            String          @id // Composite of dealerId + week + year
-  dealer        Dealer          @relation(fields: [dealerId], references: [id])
+  dealer        Dealer          @relation(fields: [dealerId], references: [id], onDelete: Cascade)
   dealerId      String
   week          Int
   year          Int
@@ -82,4 +89,5 @@ model WeeklyPerformance {
   @@map("weekly_performance")
   @@unique([dealerId, week, year])
   @@index([week, year])
+  @@index([rank])
 }
