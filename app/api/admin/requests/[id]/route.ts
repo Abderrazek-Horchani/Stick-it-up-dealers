@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
-
-
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export const dynamic = 'force-dynamic';
-
 
 interface PrismaError extends Error {
   code: string;
@@ -18,14 +16,6 @@ enum RequestStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED'
 }
-
-// PrismaClient is attached to the `global` object in development to prevent
-// exhausting your database connection limit.
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-const prisma = globalForPrisma.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 // Update request status
 export async function PATCH(
